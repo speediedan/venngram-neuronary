@@ -93,6 +93,8 @@ class NeuronaryFormat:
                 "applies_to": {"models": [{"id": model_id, "revision": revision}]},
                 "sets": {name: {"point": site, "layers": sorted(units),
                                 "units": {k: sorted(set(v)) for k, v in sorted(units.items())}}}}
+        if isinstance(doc.get("description"), str):
+            book["description"] = doc["description"]
         doses = {float(n["dose"]) for n in neurons}
         value: dict[str, Any]
         if len(doses) == 1:

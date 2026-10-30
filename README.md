@@ -21,13 +21,17 @@ Installing the package registers the format with venngram through the `venngram.
 - **Neurons** become per-layer units at the input of `mlp.out` (neuronary's `mlp.down_proj.input`).
 - **Doses** become one dose when they agree, else a per-unit table. `mul` becomes venngram's `scale`, and neuronary's
   default normalization becomes a named `statistic` transform.
-- **Examples** become the recipe's evidence, and the descriptive fields go under `metadata`.
+- **Examples** become the recipe's evidence, and the descriptive fields go under `metadata` (the description also
+  becomes the book's).
 - **Revisions.** neuronary pins no model revision, so the read context's resolver supplies one and the recipe records
   `revision_source: resolved-at-import`.
 - **What venngram cannot carry yet** is refused by name: an MoE `expert`, and an `apply_to` of `prompt_tokens` or
   `generated_tokens`. A lenient read context instead records it under `metadata`.
 
 This package contains code only. It does not include or redistribute neuronary's recipes; the test fixtures are written
-for the tests. Experimental, like venngram itself.
+for the tests. `examples/` holds recipes written for venngram's examples in neuronary's format (illustrative: their
+neurons exercise the format and were found by no analysis), and `examples/publish_examples.py` translates them and
+publishes the result to the Hub (`speediedan/venngram-qwen3.5-4b`, directory `neuronary/`). Experimental, like
+venngram itself.
 
 Apache-2.0.
