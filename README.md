@@ -25,8 +25,10 @@ Installing the package registers the format with venngram through the `venngram.
   becomes the book's).
 - **Revisions.** neuronary pins no model revision, so the read context's resolver supplies one and the recipe records
   `revision_source: resolved-at-import`.
-- **What venngram cannot carry yet** is refused by name: an MoE `expert`, and an `apply_to` of `prompt_tokens` or
-  `generated_tokens`. A lenient read context instead records it under `metadata`.
+- **Token scopes.** `apply_to` becomes the stage's `tokens`: `all_tokens`, `prompt_tokens` and `generated_tokens`
+  become `all`, `prompt` and `generated`.
+- **What venngram cannot carry yet** is refused by name: an MoE `expert`, and an `apply_to` with no venngram token
+  scope. A lenient read context instead records it under `metadata`.
 
 This package contains code only. It does not include or redistribute neuronary's recipes; the test fixtures are written
 for the tests. `examples/` holds recipes written for venngram's examples in neuronary's format (illustrative: their

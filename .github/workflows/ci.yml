@@ -26,3 +26,9 @@ jobs:
         run: ruff check src tests
       - name: Test
         run: python -m pytest -q
+      - name: Published translations conform
+        # the examples this repository publishes, loaded from the Hub as a reader would (needs venngram's `hf` extra)
+        if: matrix.python == '3.13'
+        run: |
+          python -m pip install huggingface_hub
+          python -m venngram.conformance hub-model:speediedan/venngram-qwen3.5-4b/neuronary

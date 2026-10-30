@@ -17,9 +17,10 @@ settings, example generations and descriptive fields. :class:`NeuronaryFormat` r
 book (the neurons as per-layer units at the input of ``mlp.out``) and a schema 2 venngram recipe (one stage, one op,
 the doses as one dose or a per-unit table). It is found by venngram through the ``venngram.formats`` entry point.
 
-Lossless or refused: what venngram cannot carry yet (an MoE ``expert``, an ``apply_to`` of ``prompt_tokens`` or
-``generated_tokens``) is refused by name, unless the read context is lenient, when it is listed in the translation's
-``unexpressed`` and kept under the recipe's ``metadata``. neuronary pins no model revision, so the read context's
+Lossless or refused: what venngram cannot carry yet (an MoE ``expert``, an ``apply_to`` with no venngram token scope)
+is refused by name, unless the read context is lenient, when it is listed in the translation's ``unexpressed`` and kept
+under the recipe's ``metadata``. ``prompt_tokens`` and ``generated_tokens`` become venngram's ``prompt`` and
+``generated`` scopes. neuronary pins no model revision, so the read context's
 resolver supplies one and the recipe records ``revision_source: resolved-at-import``.
 """
 import hashlib
@@ -34,8 +35,8 @@ __version__ = "0.1.0.dev0"
 #: neuronary sites -> venngram activation points.
 SITES = {"mlp.down_proj.input": "mlp.out.hook_in"}
 
-#: neuronary ``apply_to`` -> venngram token scopes; the others are not expressible yet.
-TOKENS = {"all_tokens": "all"}
+#: neuronary ``apply_to`` -> venngram token scopes.
+TOKENS = {"all_tokens": "all", "prompt_tokens": "prompt", "generated_tokens": "generated"}
 
 #: neuronary ``normalization`` -> a venngram value transform (``None``: raw doses).
 NORMALIZATION = {"raw": None, "layer_residual_median_over_down_column_l2": "layer_residual_median_over_down_column_l2"}
@@ -51,7 +52,7 @@ class NeuronaryFormat:
     name = "neuronary"
     version = __version__
     kinds = ("address_book", "recipe")
-    unexpressed = ("moe_experts", "prompt_tokens", "generated_tokens")
+    unexpressed = ("moe_experts",)
 
     def detect(self, doc: Any) -> bool:
         return isinstance(doc, dict) and isinstance(doc.get("neurons"), list) and isinstance(doc.get("model"), str) \

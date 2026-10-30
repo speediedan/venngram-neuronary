@@ -47,7 +47,7 @@ def test_one_dose_mul_and_raw_doses():
 
 @pytest.mark.parametrize("change, match", [
     (lambda d: d["neurons"].append({"layer": 1, "expert": 3, "neuron": 2, "dose": 1.0}), "MoE expert"),
-    (lambda d: d.update(method={"apply_to": "prompt_tokens"}), "no venngram token scope"),
+    (lambda d: d.update(method={"apply_to": "first_token"}), "no venngram token scope"),
 ])
 def test_what_venngram_cannot_carry_is_refused_unless_lenient(change, match):
     doc = copy.deepcopy(RECIPE)
@@ -63,3 +63,12 @@ def test_a_revision_resolver_is_required_and_the_format_is_discovered_by_entry_p
     with pytest.raises(SourceError, match="needs a `resolve_revision`"):
         NeuronaryFormat().read(RECIPE, ReadContext())
     assert format_for(RECIPE).name == "neuronary"  # through the installed `venngram.formats` entry point
+
+
+@pytest.mark.parametrize("apply_to, scope", [("prompt_tokens", "prompt"), ("generated_tokens", "generated")])
+def test_prompt_and_generated_tokens_become_venngram_scopes(apply_to, scope):
+    doc = {**RECIPE, "method": {"apply_to": apply_to}}
+    translation = NeuronaryFormat().read(doc, CTX)
+    recipe = Recipe.from_mapping(translation.documents["recipes/two-neurons.yaml"][1] | {
+        "book": translation.documents["books/two-neurons.yaml"][1]})
+    assert recipe.stages[0].tokens.kind == scope and not translation.unexpressed
