@@ -35,6 +35,7 @@ def test_a_recipe_translates_publishes_and_loads(tmp_path, monkeypatch):
     assert [t.name for t in op.value.transform] == ["statistic"]  # neuronary's default normalization
     assert recipe.evidence["examples"] == RECIPE["examples"] and recipe.metadata["imported_from"] == "neuronary"
     assert translation.provenance.source == "neuronary" and len(translation.provenance.input_sha256) == 64
+    assert load(f"local:{tmp_path / 'pub'}:books/two-neurons.yaml").description == RECIPE["description"]
 
 
 def test_one_dose_mul_and_raw_doses():

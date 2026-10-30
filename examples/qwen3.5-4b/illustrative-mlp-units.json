@@ -1,0 +1,22 @@
+{
+  "id": "illustrative-mlp-units",
+  "name": "Illustrative MLP units",
+  "description": "Written for venngram's examples to exercise the neuronary format and its translation: the neurons were chosen to cover the format (two layers, unequal doses, the default normalization), not found by any analysis, and have no known effect.",
+  "model": "Qwen/Qwen3.5-4B",
+  "tags": ["illustrative", "venngram-example"],
+  "author": {"handle": "speediedan"},
+  "date": "2026-10-30",
+  "neurons": [
+    {"layer": 13, "neuron": 1024, "dose": 0.5},
+    {"layer": 13, "neuron": 2048, "dose": 0.5},
+    {"layer": 15, "neuron": 4096, "dose": -0.25}
+  ],
+  "method": {
+    "op": "add",
+    "site": "mlp.down_proj.input",
+    "normalization": "layer_residual_median_over_down_column_l2",
+    "apply_to": "all_tokens"
+  },
+  "sampling": {"temperature": 0.7},
+  "examples": []
+}
