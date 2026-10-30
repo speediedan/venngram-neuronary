@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=77.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "venngram-neuronary"
+version = "0.1.0.dev0"
+description = "A venngram format adapter: reads neuronary neuron-steering recipes as venngram books and recipes"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Daniel Dale" }]
+requires-python = ">=3.11"
+dependencies = ["venngram @ git+https://github.com/speediedan/venngram@main"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.entry-points."venngram.formats"]
+neuronary = "venngram_neuronary:NeuronaryFormat"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "W", "F"]
