@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "venngram-neuronary"
 version = "0.1.0.dev0"
-description = "A venngram format adapter: reads neuronary neuron-steering recipes as venngram books and recipes"
+description = "A venngram format adapter: reads neuronary neuron-steering recipes as venngram books with treatments"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
