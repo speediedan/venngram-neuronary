@@ -14,20 +14,21 @@
 neuronary publishes neuron-steering recipes as JSON (``schema/recipe.schema.json``): a model id, a list of
 ``{layer, neuron, dose}``, an optional ``method`` (``op``, ``site``, ``normalization``, ``apply_to``), sampling
 settings, example generations and descriptive fields. :class:`NeuronaryFormat` reads one into a venngram checkpoint
-book (the neurons as per-layer units at the input of ``mlp.out``) and a schema 2 venngram recipe (one stage, one op,
+book (the neurons as per-layer units at the input of ``mlp.out``) with a named treatment (one stage, one op,
 the doses as one dose or a per-unit table). It is found by venngram through the ``venngram.formats`` entry point.
 
 Lossless or refused: what venngram cannot carry yet (an MoE ``expert``, an ``apply_to`` with no venngram token scope)
 is refused by name, unless the read context is lenient, when it is listed in the translation's ``unexpressed`` and kept
-under the recipe's ``metadata``. ``prompt_tokens`` and ``generated_tokens`` become venngram's ``prompt`` and
+under the treatment's ``metadata``. ``prompt_tokens`` and ``generated_tokens`` become venngram's ``prompt`` and
 ``generated`` scopes. neuronary pins no model revision, so the read context's
-resolver supplies one and the recipe records ``revision_source: resolved-at-import``.
+resolver supplies one and the treatment records ``revision_source: resolved-at-import``.
 """
 import hashlib
 import json
 from typing import Any
 
 from venngram.errors import Refusal
+from venngram.recipe import Recipe
 from venngram.sources import Provenance, ReadContext, SourceError, Translation
 
 __version__ = "0.1.0.dev0"
@@ -41,7 +42,7 @@ TOKENS = {"all_tokens": "all", "prompt_tokens": "prompt", "generated_tokens": "g
 #: neuronary ``normalization`` -> a venngram value transform (``None``: raw doses).
 NORMALIZATION = {"raw": None, "layer_residual_median_over_down_column_l2": "layer_residual_median_over_down_column_l2"}
 
-_DESCRIPTIVE = ("id", "description", "tags", "author", "date", "aliases", "source", "notes", "conditional")
+_DESCRIPTIVE = ("id", "name", "description", "tags", "author", "date", "aliases", "source", "notes", "conditional")
 _DEFAULT_METHOD = {"op": "add", "site": "mlp.down_proj.input",
                    "normalization": "layer_residual_median_over_down_column_l2", "apply_to": "all_tokens"}
 
@@ -51,7 +52,7 @@ class NeuronaryFormat:
 
     name = "neuronary"
     version = __version__
-    kinds = ("address_book", "recipe")
+    kinds = ("address_book",)
     unexpressed = ("moe_experts",)
 
     def detect(self, doc: Any) -> bool:
@@ -113,14 +114,16 @@ class NeuronaryFormat:
             metadata["unexpressed"] = [str(r) for r in refusals]
         recipe = {"schema_version": 2, "kind": "recipe", "name": doc.get("name", name),
                   "model": {"id": model_id, "revision": revision, "revision_source": "resolved-at-import"},
-                  "book": f"../books/{name}.yaml",
+                  "book": book,
                   "stages": [{"site": site, "tokens": tokens or "all",
                               "ops": [{"op": "scale" if method["op"] == "mul" else "add", "target": {"set": name},
                                        "value": value}]}],
                   "sampling": dict(doc.get("sampling") or {}),
                   "evidence": {"examples": list(doc.get("examples") or [])}, "metadata": metadata}
+        parsed = Recipe.from_mapping(recipe)
+        book["treatments"] = {name: parsed.to_treatment()}
         digest = hashlib.sha256(json.dumps(doc, sort_keys=True).encode()).hexdigest()
-        return Translation({f"books/{name}.yaml": ("address_book", book), f"recipes/{name}.yaml": ("recipe", recipe)},
+        return Translation({f"books/{name}.yaml": ("address_book", book)},
                            Provenance("format", self.name, self.version, digest, "resolved-at-import"),
                            unexpressed=tuple(refusals))
 

@@ -3,6 +3,7 @@ import copy
 
 import pytest
 
+from venngram.book import AddressBook
 from venngram.manifest import build_manifest
 from venngram.recipe import Recipe
 from venngram.sources import format_for, ReadContext, SourceError, write_translation
@@ -23,10 +24,12 @@ def test_a_recipe_translates_publishes_and_loads(tmp_path, monkeypatch):
     monkeypatch.setenv("VENNGRAM_CACHE", str(tmp_path / "cache"))
     translation = NeuronaryFormat().read(RECIPE, CTX)
     documents = write_translation(translation, tmp_path / "src")
-    assert {e.path for e in build_manifest(tmp_path / "src", documents).documents} == {
-        "books/two-neurons.yaml", "recipes/two-neurons.yaml"}
+    assert {e.path for e in build_manifest(tmp_path / "src", documents).documents} == {"books/two-neurons.yaml"}
+    assert NeuronaryFormat.kinds == ("address_book",)
     publish("local", str(tmp_path / "pub"), tmp_path / "src", documents=documents)
-    recipe = load(f"local:{tmp_path / 'pub'}:recipes/two-neurons.yaml")
+    book = load(f"local:{tmp_path / 'pub'}:books/two-neurons.yaml")
+    assert isinstance(book, AddressBook)
+    recipe = book.treatments["two-neurons"]
     assert isinstance(recipe, Recipe) and recipe.revision_source == "resolved-at-import"
     (stage,) = recipe.stages
     assert stage.site == "mlp.out.hook_in" and stage.tokens.kind == "all"
@@ -34,6 +37,7 @@ def test_a_recipe_translates_publishes_and_loads(tmp_path, monkeypatch):
     assert op.op == "add" and op.unit_doses(recipe.book) == {(13, 7956): -1.0, (14, 8949): 1.0}
     assert [t.name for t in op.value.transform] == ["statistic"]  # neuronary's default normalization
     assert recipe.evidence["examples"] == RECIPE["examples"] and recipe.metadata["imported_from"] == "neuronary"
+    assert recipe.metadata["name"] == "Two neurons"
     assert translation.provenance.source == "neuronary" and len(translation.provenance.input_sha256) == 64
     assert load(f"local:{tmp_path / 'pub'}:books/two-neurons.yaml").description == RECIPE["description"]
 
@@ -41,7 +45,8 @@ def test_a_recipe_translates_publishes_and_loads(tmp_path, monkeypatch):
 def test_one_dose_mul_and_raw_doses():
     doc = {**RECIPE, "neurons": [{"layer": 15, "neuron": n, "dose": 0.8} for n in (4041, 17)],
            "method": {"op": "mul", "normalization": "raw"}}
-    recipe = NeuronaryFormat().read(doc, CTX).documents["recipes/two-neurons.yaml"][1]
+    book = NeuronaryFormat().read(doc, CTX).documents["books/two-neurons.yaml"][1]
+    recipe = book["treatments"]["two-neurons"]
     assert recipe["stages"][0]["ops"] == [{"op": "scale", "target": {"set": "two-neurons"}, "value": {"dose": 0.8}}]
 
 
@@ -56,7 +61,7 @@ def test_what_venngram_cannot_carry_is_refused_unless_lenient(change, match):
         NeuronaryFormat().read(doc, CTX)
     lenient = NeuronaryFormat().read(doc, ReadContext(resolve_revision=lambda m: "abc123", lenient=True))
     assert len(lenient.unexpressed) == 1
-    assert lenient.documents["recipes/two-neurons.yaml"][1]["metadata"]["unexpressed"]
+    assert lenient.documents["books/two-neurons.yaml"][1]["treatments"]["two-neurons"]["metadata"]["unexpressed"]
 
 
 def test_a_revision_resolver_is_required_and_the_format_is_discovered_by_entry_point():
@@ -69,6 +74,6 @@ def test_a_revision_resolver_is_required_and_the_format_is_discovered_by_entry_p
 def test_prompt_and_generated_tokens_become_venngram_scopes(apply_to, scope):
     doc = {**RECIPE, "method": {"apply_to": apply_to}}
     translation = NeuronaryFormat().read(doc, CTX)
-    recipe = Recipe.from_mapping(translation.documents["recipes/two-neurons.yaml"][1] | {
-        "book": translation.documents["books/two-neurons.yaml"][1]})
+    book = AddressBook.from_mapping(translation.documents["books/two-neurons.yaml"][1])
+    recipe = book.treatments["two-neurons"]
     assert recipe.stages[0].tokens.kind == scope and not translation.unexpressed
